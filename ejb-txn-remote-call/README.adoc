@@ -132,6 +132,7 @@ will be executed on `server1`.
 ----
 cd ${jbossHomeName}_1;\
 ./bin/jboss-cli.sh -DremoteServerUsername="quickstartUser" -DremoteServerPassword="quickstartPwd1!"\
+  -DpostgresqlUsername="test" -DpostgresqlPassword="test"/
   --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/remote-configuration.cli \
   --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/cli.local.properties
 ----

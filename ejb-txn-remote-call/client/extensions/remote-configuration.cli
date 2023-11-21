@@ -6,6 +6,8 @@ set remoteServerUsername=${remoteServerUsername}
 set remoteServerPassword=${remoteServerPassword}
 set serverConfig=${serverConfig}
 set clientMappingsSocketBinding=${clientMappingsSocketBinding}
+set postgresqlUsername=${postgresqlUsername}
+set postgresqlPassword=${postgresqlPassword}
 
 # running embeded server with server config
 embed-server --server-config=$serverConfig
@@ -60,8 +62,8 @@ xa-data-source add\
     --name=ejbJtaDs\
     --driver-name=postgresql\
     --jndi-name=java:jboss/datasources/ejbJtaDs\
-    --user-name=test\
-    --password=test\
+    --user-name=$postgresqlUsername\
+    --password=$postgresqlPassword\
     --xa-datasource-properties=ServerName=localhost
 
 /subsystem=datasources/xa-data-source=ejbJtaDs/xa-datasource-properties=PortNumber:add(value=5432)

@@ -236,6 +236,12 @@
                                     <propertiesFiles>
                                         <propertyFile>extensions/cli.local.properties</propertyFile>
                                     </propertiesFiles>
+                                    <systemProperties>
+                                        <remoteServerUsername>${remoteServerUsername}</remoteServerUsername>
+                                        <remoteServerPassword>${remoteServerPassword}</remoteServerPassword>
+                                        <postgresqlUsername>${postgresqlUsername}</postgresqlUsername>
+                                        <postgresqlPassword>${postgresqlPassword}</postgresqlPassword>
+                                    </systemProperties>
                                 </configuration>
                             </execution>
                         </executions>
