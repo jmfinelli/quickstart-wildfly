@@ -12,8 +12,8 @@ embed-server --server-config=$serverConfig
 
 /system-property=remote.server.host:add(value=$remoteServerHost)
 /system-property=remote.server.port:add(value=$remoteServerPort)
-/system-property=remote.server.username:add(value=quickstartUser)
-/system-property=remote.server.password:add(value=quickstartPwd1!)
+/system-property=remote.server.username:add(value=$remoteServerUsername)
+/system-property=remote.server.password:add(value=$remoteServerPassword)
 /system-property=remote.deployment.name:add(value=$remoteDeploymentName)
 /system-property=client.mappings.socket.binding:add(value=$clientMappingsSocketBinding)
 

@@ -131,7 +131,7 @@ will be executed on `server1`.
 [source,sh,subs="+quotes,attributes+"]
 ----
 cd ${jbossHomeName}_1;\
-./bin/jboss-cli.sh \
+./bin/jboss-cli.sh -DremoteServerUsername="quickstartUser" -DremoteServerPassword="quickstartPwd1!"\
   --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/remote-configuration.cli \
   --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/cli.local.properties
 ----
@@ -147,15 +147,12 @@ Running `remote-configuration.cli` results in the creation of:
 
 === Configure datasources
 
-As the EJBs on the various servers perform transactional work against a database, it is needed to spin up a new PostgreSQL database.
-
-The following https://github.com/jboss-developer/jboss-developer-shared-resources/blob/master/guides/CONFIGURE_POSTGRESQL.md#download-and-install-postgresql[procedure] briefly summarizes the steps required to configure PostgreSQL.
-
-For this quickstart, a simple PostgreSQL container will be used:
+As this quickstart performs transactional work against a database, it is needed to create a new database.
+For the purpose of this quickstart, a simple PostgreSQL container will be used:
 
 [source,sh]
 ----
-docker run -p 5432:5432 --rm  -ePOSTGRES_DB=test -ePOSTGRES_USER=test -ePOSTGRES_PASSWORD=test postgres:9.4 -c max-prepared-transactions=110 -c log-statement=all
+podman run -p 5432:5432 --rm  -ePOSTGRES_DB=test -ePOSTGRES_USER=test -ePOSTGRES_PASSWORD=test postgres:9.4 -c max-prepared-transactions=110 -c log-statement=all
 ----
 
 [#_start_productname_servers]
