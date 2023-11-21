@@ -36,8 +36,12 @@
     <description>The project is the application to be deployed on the client server to call the second server</description>
 
     <properties>
-        <!-- The versions for BOMs, Dependencies and Plugins -->
-        <version.server.bom>30.0.0.Final</version.server.bom>
+        <!-- the version for the Server -->
+        <version.server>30.0.0.Final</version.server>
+        <!-- The versions for BOMs, Packs and Plugins -->
+        <version.bom.ee>${version.server}</version.bom.ee>
+        <version.plugin.wildfly>4.2.0.Final</version.plugin.wildfly>
+        <version.wildfly-datasources-galleon-pack>6.0.0.Final</version.wildfly-datasources-galleon-pack>
     </properties>
 
     <repositories>
@@ -101,7 +105,7 @@
             <dependency>
                 <groupId>org.wildfly.bom</groupId>
                 <artifactId>wildfly-ee-with-tools</artifactId>
-                <version>${version.server.bom}</version>
+                <version>${version.bom.ee}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -164,14 +168,80 @@
 
     <build>
         <finalName>client</finalName>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.wildfly.plugins</groupId>
+                    <artifactId>wildfly-maven-plugin</artifactId>
+                    <version>${version.plugin.wildfly}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>${version.war.plugin}</version>
                 <configuration>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>provisioned-server</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.wildfly.plugins</groupId>
+                        <artifactId>wildfly-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>package</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>package</goal>
+                                </goals>
+                                <configuration>
+                                    <feature-packs>
+                                        <feature-pack>
+                                            <location>org.wildfly:wildfly-galleon-pack:${version.server}</location>
+                                        </feature-pack>
+                                        <feature-pack>
+                                            <groupId>org.wildfly</groupId>
+                                            <artifactId>wildfly-datasources-galleon-pack</artifactId>
+                                            <version>${version.wildfly-datasources-galleon-pack}</version>
+                                        </feature-pack>
+                                    </feature-packs>
+                                    <layers>
+                                        <layer>cloud-server</layer>
+                                        <layer>postgresql-driver</layer>
+                                    </layers>
+                                    <!-- deploys the quickstart on root web context -->
+                                    <name>ROOT.war</name>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>run-script</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>execute-commands</goal>
+                                </goals>
+                                <configuration>
+                                    <offline>true</offline>
+                                    <jbossHome>target/server</jbossHome>
+                                    <scripts>
+                                        <script>extensions/remote-configuration.cli</script>
+                                    </scripts>
+                                    <propertiesFiles>
+                                        <propertyFile>extensions/cli.local.properties</propertyFile>
+                                    </propertiesFiles>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

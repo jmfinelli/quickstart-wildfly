@@ -36,9 +36,13 @@
     <description>The project is the application to be deployed on the second server to receive the call</description>
 
     <properties>
-        <!-- The versions for BOMs, Dependencies and Plugins -->
-        <version.narayana>5.13.0.Final</version.narayana>
-        <version.server.bom>30.0.0.Final</version.server.bom>
+        <!-- the version for the Server -->
+        <version.server>30.0.0.Final</version.server>
+        <!-- The versions for BOMs, Packs and Plugins -->
+        <version.bom.ee>${version.server}</version.bom.ee>
+        <version.narayana>7.0.0.Final</version.narayana>
+        <version.plugin.wildfly>4.2.0.Final</version.plugin.wildfly>
+        <version.wildfly-datasources-galleon-pack>6.0.0.Final</version.wildfly-datasources-galleon-pack>s
     </properties>
 
     <repositories>
@@ -102,7 +106,7 @@
             <dependency>
                 <groupId>org.wildfly.bom</groupId>
                 <artifactId>wildfly-ee-with-tools</artifactId>
-                <version>${version.server.bom}</version>
+                <version>${version.bom.ee}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -149,7 +153,7 @@
         <!-- for Mock XAResource recovery we need the dependency to Narayana -->
         <dependency>
             <groupId>org.jboss.narayana.jts</groupId>
-            <artifactId>narayana-jts-idlj-jakarta</artifactId>
+            <artifactId>narayana-jts-idlj</artifactId>
             <version>${version.narayana}</version>
             <scope>provided</scope>
         </dependency>
@@ -157,6 +161,15 @@
 
     <build>
         <finalName>server</finalName>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.wildfly.plugins</groupId>
+                    <artifactId>wildfly-maven-plugin</artifactId>
+                    <version>${version.plugin.wildfly}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <artifactId>maven-war-plugin</artifactId>
@@ -166,4 +179,77 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>provisioned-server</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.wildfly.plugins</groupId>
+                        <artifactId>wildfly-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>package</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>package</goal>
+                                </goals>
+                                <configuration>
+                                    <feature-packs>
+                                        <feature-pack>
+                                            <location>org.wildfly:wildfly-galleon-pack:${version.server}</location>
+                                        </feature-pack>
+                                        <feature-pack>
+                                            <groupId>org.wildfly</groupId>
+                                            <artifactId>wildfly-datasources-galleon-pack</artifactId>
+                                            <version>${version.wildfly-datasources-galleon-pack}</version>
+                                        </feature-pack>
+                                    </feature-packs>
+                                    <galleonOptions>true</galleonOptions>
+                                    <layers>
+                                        <layer>cloud-server</layer>
+                                        <layer>postgresql-driver</layer>
+                                    </layers>
+                                    <!-- deploys the quickstart on root web context -->
+                                    <name>ROOT.war</name>
+                                    <packagingScripts>
+                                        <packagingScript>
+                                            <scripts>
+                                                <script>extensions/remote-configuration.cli</script>
+                                            </scripts>
+                                            <propertiesFiles>
+                                                <propertyFile>extensions/cli.local.properties</propertyFile>
+                                            </propertiesFiles>
+                                        </packagingScript>
+                                        <packagingScript>
+                                            <scripts>
+                                                <script>extensions/add-postgresql-datasource.cli</script>
+                                            </scripts>
+                                        </packagingScript>
+                                    </packagingScripts>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>start</id>
+                                <configuration>
+                                    <addUser>
+                                        <users>
+                                            <user>
+                                                <username>quickstartUser</username>
+                                                <password>quickstartPwd1!</password>
+                                            </user>
+                                        </users>
+                                    </addUser>
+                                </configuration>
+                                <goals>
+                                    <goal>start</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

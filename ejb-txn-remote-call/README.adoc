@@ -16,16 +16,16 @@ The `ejb-txn-remote-call` quickstart demonstrates remote transactional EJB calls
 
 == What is it?
 
-The `ejb-txn-remote-call` quickstart demonstrates the remote transactional EJB calls over two application servers of {productNameFull}. The remote side forms a HA cluster.
+The `ejb-txn-remote-call` quickstart demonstrates the remote transactional EJB calls over two {productNameFull}s. The remote side forms a HA cluster.
 
 == Description
 
-The EJB remote call propagates a JTA transaction. Further, the quickstart demonstrates the transaction recovery, which is run for both servers when a failure occurs.
+This quickstart demonstrates how EJB remote calls propagate JTA transaction across {productNameFull}s. Further, this quickstart demonstrates the transaction recovery, which is run for both servers when a failure occurs.
 
 This quickstart contains two Maven projects.
-The first maven project represents the sender side, and is intended to be deployed on the first server (`server1`).
-The second project represents the called side. This project is intended to be deployed
-to the other two servers (`server2` and `server3`). The two projects should not be deployed to the same server.
+The first maven project represents the sender side, and is intended to be deployed on the first {productName} (`server1`).
+The second project represents the receiver side. This project is intended to be deployed
+to the other two {productName} (`server2` and `server3`). The two projects must not be deployed to the same server.
 
 .Maven projects in this quickstart
 [cols="40%,60%",options="headers"]
@@ -33,30 +33,23 @@ to the other two servers (`server2` and `server3`). The two projects should not 
 |Project |Description
 
 |`client`
-|An application that you deploy to the first server, to `server1`.
-It includes REST endpoints that provide EJB remote calls to the `server application`
-residing on the other servers.
-In addition, the remote EJB calls the REST endpoint invocation process to insert data into a database.
-The REST invocation starts a transaction that enlists two participants
-(the database and the EJB remote invocation).
-The transaction manager then uses the two-phase commit to commit the transaction
-over the two servers.
-Further, the quickstart examines failures and shows the transactional behaviour
-in such cases.
+|The application deployed to the first {productName} server.
+Users can interact with this application through some REST endpoints, which start remote EJB calls toward the `server` application
+deployed on the other two {productName}s.
+In more details, the transaction initiated at the client side enlists two participants: a database, and the EJB remote server.
+The transaction manager then uses the two-phase commit to commit the transactions over the two servers.
+Moreover, this quickstart shows how transactional failures how dealt with.
 
 |`server`
-|An application that receives the remote EJB calls from the `client` application.
-This `server` application is deployed to `server2` and `server3`.
-The EJB component receives the EJB remote call and, depending on the scenario,
-resumes on the transaction propagated in the context of the remote EJB call.
-The call inserts data to the database.
-The propagated transaction enlists two participants
-(the database, and a mock XAResource used for quickstart demonstration purposes).
+|The application deployed to the second and third {productName} servers.
+This application receives the remote EJB calls from the `client` application and,
+depending on the scenario, process the propagated transaction.
+In more details, the transaction initiated at the server side enlists two participants: a database, and a mock XAResource.
 |===
 
 == Running the Quickstart
 
-The quickstart elaborates on running the example in <<_running_in_a_bare_metal_environment, a bare metal environment>> and on OpenShift.
+This quickstart demonstrates its functionalities on <<_running_in_a_bare_metal_environment, bare metal>>, using {productName} Maven plugin, and on OpenShift.
 
 // System Requirements
 include::../shared-doc/system-requirements.adoc[leveloffset=+1]
@@ -68,25 +61,29 @@ include::../shared-doc/run-the-quickstart-in-jboss-developer-studio.adoc[levelof
 
 == The Goal
 
-Your goal is to set up and start 3 {productName} servers, first deploys the `client`
-application the other two configure a cluster and deploy the `server` application.
 The EJB remote call propagates transaction from `client` application
 to `server` application. The remote call hits one of the two servers where the `server` application is deployed.
 
 == Running in a bare metal environment
 
+First of all,  three {productName} servers needs to be configured. Then, the `client` application gets deployed to the first server (`server1`),
+while the `server` application gets deployed to the other two {productName} servers (`server2`, and `server3`, which are configured as a cluster).
+
 [[_setup_productname_servers]]
 === Setup {productName} servers
 
-The easiest way to start multiple instances on a local computer is to copy the {productName} installation directory
+The easiest way to start multiple instances of {productName} on a local computer is to copy the {productName} installation directory
 to three separate directories.
 
-The installation directory for `server1` (`client` application) is named `__{jbossHomeName}_1__`,
-for `server2` it is named `__{jbossHomeName}_2__` (`server` application) and for `server3` it is named `__{jbossHomeName}_3__` (`server` application).
+The installation directories are named:
 
+* `__{jbossHomeName}_1__` for `server1`
+* `__{jbossHomeName}_2__` for `server2`
+* `__{jbossHomeName}_3__` for `server3`
+
+Given that the installation directory of the {productName} is identified with ${jbossHomeName}:
 [source,sh,subs="+quotes,attributes+"]
 ----
-# considering the ${jbossHomeName} is installation directory of the {productName}
 cp -r ${jbossHomeName} server1
 {jbossHomeName}_1="$PWD/server1"
 cp -r ${jbossHomeName} server2
@@ -95,11 +92,10 @@ cp -r ${jbossHomeName} server3
 {jbossHomeName}_3="$PWD/server3"
 ----
 
-=== Configure EJB remoting, and authentication of the remote call
+=== Creating a user for `server2` and `server3`
 
-To successfully process the remote call  from `server1` to either `server2`
-or to `server3` you must create a user on the receiver server
-that the remote call will be authenticated to.
+To successfully process EJB remote calls from `server1` to either `server2`
+or to `server3` a user to authenticate the EJB remote calls must be created on the receiving servers.
 
 Run the following procedure in the directories `__{jbossHomeName}_2__` and `__{jbossHomeName}_3__` to create the user for `server2` and `server3`.
 
@@ -120,18 +116,21 @@ To represent the user add the following to the server-identities definition <sec
 ----
 ====
 
-Now, you must configure `server1` to authenticate with the remote side when
-the EJB call is invoked.
-See the script `${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/remote-configuration.cli`
-to review the commands that will be executed.
-The `cli` script is configured with `cli.local.properties`
-to run in https://wildfly.org/news/2015/03/13/Offline-CLI/[embedded mode] against the `standalone.xml`.
+=== Configuring EJB remoting on `server1`
+
+EJB remote calls from `server1` to either `server2` or `server3` need to be authenticated. To achieve
+this configuration, the script `${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/remote-configuration.cli`
+will be executed on `server1`.
+
+[NOTE]
+====
+`remote-configuration.cli` is configured with properties in `cli.local.properties` and runs against `standalone.xml`
+====
 
 [[remote_configuration_cli]]
 [source,sh,subs="+quotes,attributes+"]
 ----
-# go to the directory with distribution of server1
-cd ${jbossHomeName}_1
+cd ${jbossHomeName}_1;\
 ./bin/jboss-cli.sh \
   --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/remote-configuration.cli \
   --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/cli.local.properties
@@ -139,84 +138,25 @@ cd ${jbossHomeName}_1
 
 NOTE: For Windows, use the `bin\jboss-cli.bat` script.
 
-* It configures a `remote outbound socket` that points to the port where EJB remoting endpoint
-  can be reached at `server2`.
-* It configures a https://docs.wildfly.org/22/wildscribe/subsystem/remoting/remote-outbound-connection/index.html[`remote outbound connection`]. It is referenced in the war deployment with `jboss-ejb-client.xml` descriptor
+Running `remote-configuration.cli` results in the creation of:
+
+* A `remote outbound socket` that points to the port on `server2`/`server3` where EJB remoting endpoints can be reached
+* A https://docs.wildfly.org/22/wildscribe/subsystem/remoting/remote-outbound-connection/index.html[`remote outbound connection`] that can be referenced in the war deployment with `jboss-ejb-client.xml` descriptor
 (see `${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/src/main/webapp/WEB-INF/jboss-ejb-client.xml`).
-* It defines an authentication context `auth_context` which is used by the new created remoting connection `remote-ejb-connection`. The authentication context uses the same username and password created for `server2` and `server3`.
+* An authentication context `auth_context` that is used by the new created remoting connection `remote-ejb-connection`; the authentication context uses the same username and password created for `server2` and `server3`
 
 === Configure datasources
 
-The EJBs perform transactional work against a database, so the servers need
-to know how to connect to that database. The following steps shows how to configure
-an XA datasource with the name `ejbJtaDs` for connecting to a PostgreSQL database.
+As the EJBs on the various servers perform transactional work against a database, it is needed to spin up a new PostgreSQL database.
 
-[NOTE]
-====
-
-First you need a database running.
 The following https://github.com/jboss-developer/jboss-developer-shared-resources/blob/master/guides/CONFIGURE_POSTGRESQL.md#download-and-install-postgresql[procedure] briefly summarizes the steps required to configure PostgreSQL.
 
-For local testing purposes you can use a simple docker container:
+For this quickstart, a simple PostgreSQL container will be used:
 
 [source,sh]
 ----
 docker run -p 5432:5432 --rm  -ePOSTGRES_DB=test -ePOSTGRES_USER=test -ePOSTGRES_PASSWORD=test postgres:9.4 -c max-prepared-transactions=110 -c log-statement=all
 ----
-====
-
-. Install the JDBC driver as https://docs.wildfly.org/22/Developer_Guide.html#Class_Loading_in_WildFly[a jboss module].
-  Using Maven artifact definition and ${productName} will download
-  the driver during startup. +
-  Run the command on each server.
-+
-[source,sh,subs="+quotes,attributes+"]
-----
-cd ${jbossHomeName}_1
-./bin/jboss-cli.sh "embed-server,\
-  module add --name=org.postgresql.jdbc \
-  --module-xml=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/postgresql-module.xml"
-cd ${jbossHomeName}_2
-# -- ditto --
-cd ${jbossHomeName}_3
-# -- ditto --
-----
-+
-. Configure the JDBC driver. For `server1` use the configuration file `standalone.xml`;
-for the `server2` and `server3` use the configuration file `standalone-ha.xml`.
-+
-[source,sh,subs="+quotes,attributes+"]
-----
-cd ${jbossHomeName}_1
-./bin/jboss-cli.sh "embed-server --server-config=standalone.xml,\
- /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
-cd ${jbossHomeName}_2
-./bin/jboss-cli.sh "embed-server --server-config=standalone-ha.xml,\
- /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
-cd ${jbossHomeName}_3
-# -- ditto --
-----
-+
-. Configure xa-datasource for each server. For `server1` use the configuration file `standalone.xml`;
-for `server2` and `server3` use the configuration file `standalone-ha.xml`.
-+
-[source,sh]
-----
-cd ${jbossHomeName}_1
-./bin/jboss-cli.sh "embed-server --server-config=standalone.xml,\
-  xa-data-source add --name=ejbJtaDs --driver-name=postgresql --jndi-name=java:jboss/datasources/ejbJtaDs --user-name=test --password=test --xa-datasource-properties=ServerName=localhost,\
-  /subsystem=datasources/xa-data-source=ejbJtaDs/xa-datasource-properties=PortNumber:add(value=5432),\
-  /subsystem=datasources/xa-data-source=ejbJtaDs/xa-datasource-properties=DatabaseName:add(value=test)"
-cd ${jbossHomeName}_2
-./bin/jboss-cli.sh "embed-server --server-config=standalone-ha.xml,\
-  xa-data-source add --name=ejbJtaDs --driver-name=postgresql --jndi-name=java:jboss/datasources/ejbJtaDs --user-name=test --password=test --xa-datasource-properties=ServerName=localhost,\
-  /subsystem=datasources/xa-data-source=ejbJtaDs/xa-datasource-properties=PortNumber:add(value=5432),\
-  /subsystem=datasources/xa-data-source=ejbJtaDs/xa-datasource-properties=DatabaseName:add(value=test)"
-cd ${jbossHomeName}_3
-# -- ditto --
-----
-
-NOTE: For Windows, use the `bin\jboss-cli.bat` script.
 
 [#_start_productname_servers]
 === Start {productName} servers
