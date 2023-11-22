@@ -66,7 +66,7 @@ to `server` application. The remote call hits one of the two servers where the `
 
 == Running in a bare metal environment
 
-First of all,  three {productName} servers needs to be configured. Then, the `client` application gets deployed to the first server (`server1`),
+First of all, three {productName} servers needs to be configured. Then, the `client` application gets deployed to the first server (`server1`),
 while the `server` application gets deployed to the other two {productName} servers (`server2`, and `server3`, which are configured as a cluster).
 
 [[_setup_productname_servers]]
@@ -86,8 +86,14 @@ Given that the installation directory of the {productName} is identified with ${
 ----
 cp -r ${jbossHomeName} server1
 {jbossHomeName}_1="$PWD/server1"
+----
+[source,sh,subs="+quotes,attributes+"]
+----
 cp -r ${jbossHomeName} server2
 {jbossHomeName}_2="$PWD/server2"
+----
+[source,sh,subs="+quotes,attributes+"]
+----
 cp -r ${jbossHomeName} server3
 {jbossHomeName}_3="$PWD/server3"
 ----
@@ -131,8 +137,7 @@ will be executed on `server1`.
 [source,sh,subs="+quotes,attributes+"]
 ----
 cd ${jbossHomeName}_1;\
-./bin/jboss-cli.sh -DremoteServerUsername="quickstartUser" -DremoteServerPassword="quickstartPwd1!"\
-  -DpostgresqlUsername="test" -DpostgresqlPassword="test"/
+./bin/jboss-cli.sh -DremoteServerUsername="quickstartUser" -DremoteServerPassword="quickstartPwd1!" -DpostgresqlUsername="test" -DpostgresqlPassword="test"\
   --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/remote-configuration.cli \
   --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/cli.local.properties
 ----
@@ -156,20 +161,71 @@ For the purpose of this quickstart, a simple PostgreSQL container will be used:
 podman run -p 5432:5432 --rm  -ePOSTGRES_DB=test -ePOSTGRES_USER=test -ePOSTGRES_PASSWORD=test postgres:9.4 -c max-prepared-transactions=110 -c log-statement=all
 ----
 
+The {productName} servers need to be configured to be able to connect to the database.
+First of all, a JDBC driver needs to be installed as https://docs.wildfly.org/30/Developer_Guide.html#Class_Loading_in_WildFly[jboss module].
+
+The following command (along packaging the `client` and the `server` applications) downloads the PostgreSQL driver automatically through Maven:
+[source,sh,subs="+quotes,attributes+"]
+----
+cd ${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call
+mvn clean package
+----
+Then, the PostgreSQL driver needs to be loaded as jboss module in all {productName} servers:
+
+[source,sh,subs="+quotes,attributes+"]
+----
+cd ${jbossHomeName}_1
+./bin/jboss-cli.sh "embed-server,\
+  module add --name=org.postgresql.jdbc \
+  --resources=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/target/postgresql/postgresql.jar"
+----
+[source,sh,subs="+quotes,attributes+"]
+----
+cd ${jbossHomeName}_2
+./bin/jboss-cli.sh "embed-server,\
+  module add --name=org.postgresql.jdbc \
+  --resources=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/target/postgresql/postgresql.jar"
+----
+[source,sh,subs="+quotes,attributes+"]
+----
+cd ${jbossHomeName}_3
+./bin/jboss-cli.sh "embed-server,\
+  module add --name=org.postgresql.jdbc \
+  --resources=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/target/postgresql/postgresql.jar"
+----
+
+Then, the PostgreSQL driver needs to be installed on all {productName} servers.
+For `server1`, the configuration file `standalone.xml` will be used.
+For `server2` and `server3` the configuration file `standalone-ha.xml` will be used.
+
+[source,sh,subs="+quotes,attributes+"]
+----
+cd ${jbossHomeName}_1
+./bin/jboss-cli.sh "embed-server --server-config=standalone.xml,\
+ /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
+----
+[source,sh,subs="+quotes,attributes+"]
+----
+cd ${jbossHomeName}_2
+./bin/jboss-cli.sh "embed-server --server-config=standalone-ha.xml,\
+ /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
+----
+[source,sh,subs="+quotes,attributes+"]
+----
+cd ${jbossHomeName}_3
+./bin/jboss-cli.sh "embed-server --server-config=standalone-ha.xml,\
+ /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
+----
+
 [#_start_productname_servers]
 === Start {productName} servers
 
-When the setup was done you can start the servers.
-Start the `server1` with the `standalone.xml` configuration.
-The `server2` and the `server3` comprise a cluster, you need to start them
-with the `standalone-ha.xml` configuration.
-
-For starting at the same machine you need to use the port offset
-to bind every server at a different port.
-Each server has to define a unique transaction node id and jboss node name.
-Use the system properties `jboss.tx.node.id` and `jboss.node.name` when starting the servers.
-The configuration file `custom-config.xml` refers to application user's credentials
-and making possible for the transaction recovery to authenticate to recover the remote transaction failure.
+At this point, the configuration of the {productName} servers is completed.
+`server1` must be started with the `standalone.xml` configuration,
+while `server2` and `server3` must be started with the `standalone-ha.xml` configuration to create a cluster.
+As all {productName} servers will be run in the same bare metal environment,
+a port offset will be applied to `server2` and `server3`. Moreover,
+each server has to define a unique transaction node identifier and jboss node name.
 
 Start each server in a separate terminal.
 
@@ -177,28 +233,37 @@ Start each server in a separate terminal.
 ----
 cd ${jbossHomeName}_1
 ./bin/standalone.sh -c standalone.xml -Djboss.tx.node.id=server1 -Djboss.node.name=server1 -Dwildfly.config.url=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/configuration/custom-config.xml
-
+----
+[source,sh,subs="+quotes,attributes+",options="nowrap"]
+----
 cd ${jbossHomeName}_2
 ./bin/standalone.sh -c standalone-ha.xml -Djboss.tx.node.id=server2 -Djboss.node.name=server2 -Djboss.socket.binding.port-offset=100
-
+----
+[source,sh,subs="+quotes,attributes+",options="nowrap"]
+----
 cd ${jbossHomeName}_3
 ./bin/standalone.sh -c standalone-ha.xml -Djboss.tx.node.id=server3 -Djboss.node.name=server3 -Djboss.socket.binding.port-offset=200
 ----
+
+NOTE: To enable the recovery of remote transaction failures, the configuration file `custom-config.xml`
+should be loaded into `server1`; this operation will authenticate `server1` against `server2`/`server3`.
 
 NOTE: For Windows, use the `bin\standalone.bat` script.
 
 === Deploying the Quickstart applications
 
-. Expecting the {productName} servers were <<_setup_productname_servers, configured>> and <<_start_productname_servers, started.>>
-. Clean and build the project by navigating to the root directory of this quickstart in terminal and running
+. With all {productName} servers <<_setup_productname_servers, configured>> and <<_start_productname_servers, running>>,
+the `client` and `server` application can be deployed
+
+. The whole project can be built using the following commands:
 +
 [source,sh,subs="+quotes,attributes+",options="nowrap"]
 ----
 cd ${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/
-mvn clean install
+mvn clean package
 ----
 +
-. On `server1`, navigate to the `client` subfolder of the `ejb-txn-remote-call` quickstart and deploy the application `war` file.
+. Then, the `client` application can be deployed using the following commands:
 +
 [source,sh,subs="+quotes,attributes+",options="nowrap"]
 ----
@@ -206,7 +271,7 @@ cd ${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client
 mvn wildfly:deploy
 ----
 +
-. On `server2` and `server3`, navigate to the `server` subfolder of the `ejb-txn-remote-call` quickstart and deploy the application `war` file.
+. Lastly, the `server` application can be deployed using the following commands:
 +
 [source,sh,subs="+quotes,attributes+",options="nowrap"]
 ----
@@ -215,17 +280,14 @@ mvn wildfly:deploy -Dwildfly.port=10090
 mvn wildfly:deploy -Dwildfly.port=10190
 ----
 
-The commands should finish without any errors.
-The commands connect to running instances of the {productName}
-and deploys the `war` archives to the servers.
-If an error occurs first verify that the {productName} is running
-and that's bound to the correct port.
-Then consult the error message details.
+The commands just run employed the WildFly Maven plugin to connect to the running instances of {productName}
+and deploy the `war` archives to the servers.
 
-If you run the commands then verify
-that the deployments are published on the all three servers.
+==== Checkpoints
 
-. On to `server1` check the log to confirm that the `client/target/client.war` archive is deployed.
+. If errors occur, verify that the {productName} servers are running and that they are configured properly
+. Verify that all deployments are published into all three servers
+.. On `server1` check the log to confirm that the `client/target/client.war` archive is deployed
 +
 [source,options="nowrap"]
 ----
@@ -234,7 +296,7 @@ INFO  [org.wildfly.extension.undertow] (ServerService Thread Pool -- 76) WFLYUT0
 INFO  [org.jboss.as.server] (management-handler-thread - 2) WFLYSRV0010: Deployed "client.war" (runtime-name : "client.war")
 ----
 +
-. On `server2` and `server3`, check the log to confirm that the `server/target/server.war` archive is deployed. 
+.. On `server2` and `server3`, check the log to confirm that the `server/target/server.war` archive is deployed.
 +
 [source,options="nowrap"]
 ----
@@ -244,8 +306,8 @@ INFO  [org.jboss.as.server] (management-handler-thread - 1) WFLYSRV0010: Deploye
 ----
 
 . Verify that `server2` and `server3` formed a HA cluster.
-Check the server log of either `server2` and `server3`, or both.
-
+.. Check the server log of either `server2` and `server3`, or both.
++
 [source,options="nowrap"]
 ----
 [org.infinispan.CLUSTER] () ISPN000094: Received new cluster view for channel ejb: [server2|1] (2) [server2, server3]
