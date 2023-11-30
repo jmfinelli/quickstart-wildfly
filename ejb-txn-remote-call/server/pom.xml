@@ -42,7 +42,7 @@
         <version.bom.ee>${version.server}</version.bom.ee>
         <version.narayana>7.0.0.Final</version.narayana>
         <version.plugin.wildfly>4.2.0.Final</version.plugin.wildfly>
-        <version.wildfly-datasources-galleon-pack>6.0.0.Final</version.wildfly-datasources-galleon-pack>s
+        <version.wildfly-datasources-galleon-pack>6.0.0.Final</version.wildfly-datasources-galleon-pack>
     </properties>
 
     <repositories>
@@ -175,6 +175,8 @@
                 <artifactId>maven-war-plugin</artifactId>
                 <configuration>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
+                    <!-- Modifying webappDirectory to avoid overlapping with WildFly Maven Plugin's output directory -->
+                    <webappDirectory>${project.build.directory}/serverWebAppOutput</webappDirectory>
                 </configuration>
             </plugin>
         </plugins>
@@ -206,45 +208,37 @@
                                             <version>${version.wildfly-datasources-galleon-pack}</version>
                                         </feature-pack>
                                     </feature-packs>
-                                    <galleonOptions>true</galleonOptions>
                                     <layers>
                                         <layer>cloud-server</layer>
+                                        <layer>ejb</layer>
                                         <layer>postgresql-driver</layer>
                                     </layers>
-                                    <!-- deploys the quickstart on root web context -->
-                                    <name>ROOT.war</name>
-                                    <packagingScripts>
-                                        <packagingScript>
-                                            <scripts>
-                                                <script>extensions/remote-configuration.cli</script>
-                                            </scripts>
-                                            <propertiesFiles>
-                                                <propertyFile>extensions/cli.local.properties</propertyFile>
-                                            </propertiesFiles>
-                                        </packagingScript>
-                                        <packagingScript>
-                                            <scripts>
-                                                <script>extensions/add-postgresql-datasource.cli</script>
-                                            </scripts>
-                                        </packagingScript>
-                                    </packagingScripts>
+                                    <serverConfig>standalone-ha.xml</serverConfig>
+                                    <layersConfigurationFileName>standalone-ha.xml</layersConfigurationFileName>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>start</id>
-                                <configuration>
-                                    <addUser>
-                                        <users>
-                                            <user>
-                                                <username>quickstartUser</username>
-                                                <password>quickstartPwd1!</password>
-                                            </user>
-                                        </users>
-                                    </addUser>
-                                </configuration>
+                                <id>run-script</id>
+                                <phase>package</phase>
                                 <goals>
-                                    <goal>start</goal>
+                                    <goal>execute-commands</goal>
                                 </goals>
+                                <configuration>
+                                    <offline>true</offline>
+                                    <scripts>
+                                        <script>extensions/postgresql-datasource.cli</script>
+                                    </scripts>
+                                    <propertiesFiles>
+                                        <propertyFile>extensions/cli.local.properties</propertyFile>
+                                    </propertiesFiles>
+                                    <systemProperties>
+                                        <postgresqlUsername>${postgresqlUsername}</postgresqlUsername>
+                                        <postgresqlPassword>${postgresqlPassword}</postgresqlPassword>
+                                        <nodeIdentifier>${nodeIdentifier}</nodeIdentifier>
+                                        <nodeName>${nodeName}</nodeName>
+                                    </systemProperties>
+                                    <jbossHome>target/server</jbossHome>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

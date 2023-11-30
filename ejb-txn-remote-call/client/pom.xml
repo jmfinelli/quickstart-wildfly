@@ -247,10 +247,10 @@
                                     </feature-packs>
                                     <layers>
                                         <layer>cloud-server</layer>
+                                        <layer>ejb</layer>
                                         <layer>postgresql-driver</layer>
                                     </layers>
-                                    <!-- deploys the quickstart on root web context -->
-                                    <name>ROOT.war</name>
+                                    <serverConfig>standalone.xml</serverConfig>
                                 </configuration>
                             </execution>
                             <execution>
@@ -263,7 +263,8 @@
                                     <offline>true</offline>
                                     <jbossHome>target/server</jbossHome>
                                     <scripts>
-                                        <script>extensions/remote-configuration.cli</script>
+                                        <script>extensions/remoting-configuration.cli</script>
+                                        <script>extensions/postgresql-datasource.cli</script>
                                     </scripts>
                                     <propertiesFiles>
                                         <propertyFile>extensions/cli.local.properties</propertyFile>

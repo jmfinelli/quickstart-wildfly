@@ -21,9 +21,9 @@ if [ ! -f "${JBOSS_HOME}/modules/org/postgresql/jdbc/main/module.xml" ]; then
     /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
 fi
 
-echo "Executing ejb-txn-remote-call/client ${JBOSS_HOME}/extensions/remote-configuration.cli file with properties file: ${POSTCONFIGURE_PROPERTIES_FILE}."
-[ "x$SCRIPT_DEBUG" = "xtrue" ] && cat "${JBOSS_HOME}/extensions/remote-configuration.cli"
-"${JBOSS_HOME}"/bin/jboss-cli.sh --file="${JBOSS_HOME}/extensions/remote-configuration.cli" --properties="${POSTCONFIGURE_PROPERTIES_FILE}"
+echo "Executing ejb-txn-remote-call/client ${JBOSS_HOME}/extensions/remoting-configuration.cli file with properties file: ${POSTCONFIGURE_PROPERTIES_FILE}."
+[ "x$SCRIPT_DEBUG" = "xtrue" ] && cat "${JBOSS_HOME}/extensions/remoting-configuration.cli"
+"${JBOSS_HOME}"/bin/jboss-cli.sh --file="${JBOSS_HOME}/extensions/remoting-configuration.cli" --properties="${POSTCONFIGURE_PROPERTIES_FILE}"
 
 echo "Using client.war instead of ROOT.war"
 if [ -f "${JBOSS_HOME}"/standalone/deployments/ROOT.war ]; then
