@@ -343,32 +343,22 @@ INFO  [org.infinispan.CLUSTER] () [Context=server.war/infinispan] ISPN100010: Fi
 [#_examining_the_quickstart]
 === Examining the Quickstart
 
-After the {productName} servers are configured and started, and the quickstart artifacts are deployed
-you can invoke the methods and examine their results.
+Once the {productName} servers are configured and started, and the quickstart artifacts are deployed, it is possible to
+invoke the endpoints of `server1`, which generate EJB remote invocations against the HA cluster formed by `server2` and `server3`.
 
-The `client.war` deployed to `server1` exposes several endpoints that invoke
-EJB remote invocations to the HA cluster that `server2` and `server3` formed.
-
-The expected behaviour varies depending on type
-of the remote call. It depends on running the call as part of the transaction &ndash;
-then the transaction affinity makes all calls to hit the same server instance.
-When the calls go to stateful EJB then the affinity again ensures
-the multiple calls hitting the same server instance (the calls to stateful EJB are sticky).
-When the call runs against the stateless EJB out of the transaction context then
-the calls should be load balanced over the both servers in the HA cluster.
-The following table defines the available endpoints, and the expected behaviour
-when they are invoked.
+The following table defines the available endpoints, and their expected behaviour.
 
 [NOTE]
 ====
-The endpoints return data in JSON format. You can use `curl` for invocation
-and `jq` command to format the results. For example:
+The endpoints return data in JSON format. You can use `curl` for the invocation
+and `jq` for formatting the results. For example:
+
 `curl -s http://localhost:8080/client/remote-outbound-stateless | jq .`
 ====
 
 [NOTE]
 ====
-On Windows, the `curl` and `jq` commands might not be available.
+On Windows, `curl` and `jq` might not be available.
 If so, enter the endpoints directly to a browser of your choice.
 The behaviour and the obtained JSON will be the same as for the `curl` command.
 ====
@@ -430,31 +420,39 @@ eventually. The finalization of work is done in the background
 [[_details_on_recovery]]
 ==== Observing the recovery processing after __client/remote-outbound-fail-stateless__ call
 
-The EJB call simulates the presence of an intermittent network error
-happening at the commit phase of two-phase commit protocol (2PC).
+The EJB call to the endpoint `client/remote-outbound-fail-stateless` simulates the presence
+of an intermittent network error happening at the commit phase of the two-phase commit protocol (2PC).
 
 The http://jbossts.blogspot.com/2018/01/narayana-periodic-recovery-of-xa.html[transaction recovery manager]
-periodically retries to recover the unfinished work.
-When it makes the work successfully committed, the transaction is complete,
-and the database update will be visible. You can confirm the database update
-was processed by issuing REST endpoint reporting number of finished commits.
+periodically tries to recover the unfinished work and only when this attempt is successful,
+the transaction is completed (which makes the update in the database visible). It is possible to confirm the completion of
+the transaction by invoking the REST endpoint `server/commits` at both servers `server2` and `server3`.
 
-You can invoke the endpoint `server/commits` at both servers `server2` and `server3`
-where `server` application is deployed (i.e. __http://localhost:8180/server/commits__
-and __http://localhost:8280/server/commits__).
-The output of this command is a tuple. It shows the node info, and the number of commits recorded. For example the output could be `["host: mydev.narayana.io/192.168.0.1, jboss node name: server2","3"]` and it says that the hostname is `mydev.narayana.io`, the jboss node name is `server2`,
+
+[source]
+----
+curl -s http://localhost:8180/server/commits
+----
+
+[source]
+----
+curl -s http://localhost:8280/server/commits
+----
+
+The response of `server/commits` is a tuple composed by the host's info and the number of commits.
+For example the output could be `["host: mydev.narayana.io/192.168.0.1, jboss node name: server2","3"]`
+and it says that the hostname is `mydev.narayana.io`, the jboss node name is `server2`,
 and the number of commits is `3`.
 
-Transaction recovery manager runs periodically (by default, it runs every 2 minutes)
-on all servers. The transaction was initiated on `server1`,
-and you will need to wait until is initiated there.
+The Transaction recovery manager runs periodically (by default, it runs every 2 minutes) on all servers.
+Nevertheless, as the transaction is initiated on `server1`, the recovery manager on this server will be
+responsible to initiate the recovery process.
 
 [NOTE]
 ====
-You can speed up the process and invoke the recovery process manually by accessing
-the port on which the recovery process listens.
-When the https://docs.wildfly.org/22/wildscribe/subsystem/transactions/index.html#attr-recovery-listener[listener is enabled] you can force the recovery to start on demand.
-Use `telnet` to send the `SCAN` command to the recovery manager socket at `localhost:4712`.
+The recovery process can be started manually. Using `telnet` and connecting to `localhost:4712`
+(i.e. the port where https://docs.wildfly.org/22/wildscribe/subsystem/transactions/index.html#attr-recovery-listener[the recovery process is listening to]),
+it is possible to send the `SCAN` command to force a recovery cycle
 
 [source]
 ----
@@ -471,26 +469,32 @@ Connection closed by foreign host.
 [[_steps_to_observe_recovery_processing]]
 ===== Steps to observe that the recovery processing was done
 
-. Before the executing the __remote-outbound-fail-stateless__ endpoint do verify
-  how many `commits` are counted on `server2` and `server3` by executing the `/commits`
-  HTTP endpoints.
+. Before invoking the __remote-outbound-fail-stateless__ endpoint, double check
+  the number of `commits` on `server2` and `server3` by invoking the `server/commits`
+  endpoints.
 +
 [source,sh,subs="+quotes,attributes+",options="nowrap"]
 ----
 curl http://localhost:8180/server/commits; echo
-# output:
+# output example:
 # ["host: mydev.narayana.io/192.168.0.1, jboss node name: server2","1"]
 curl http://localhost:8280/server/commits; echo
-# output:
+# output example:
 # ["host: mydev.narayana.io/192.168.0.1, jboss node name: server3","2"]
 ----
 +
-. Invoke the HTTP request to __http://localhost:8080/client/remote-outbound-fail-stateless__
+. Invoke the REST endpoint `client/remote-outbound-fail-stateless`
 +
-The output prints the name of server the request hits.
-Immediately verify the number of commits finished by running the `/commit` HTTP endpoint at that server again.
+[source,sh,subs="+quotes,attributes+",options="nowrap"]
+----
+curl http://localhost:8080/client/remote-outbound-fail-stateless | jq .
+----
 +
-. Verify that the number of commits has not changed yet.
+The JSON output from the previous command reports the name of server the request was sent to.
++
+
+. At the server reported by the previous command, verify the number of `commits` by invoking the `server/commits` endpoint.
+
 . Check the log of `server1` for the following warning message
 +
 [source,options="nowrap"]
@@ -498,9 +502,9 @@ Immediately verify the number of commits finished by running the `/commit` HTTP 
 ARJUNA016036: commit on < formatId=131077, gtrid_length=35, bqual_length=36, tx_uid=..., node_name=server1, branch_uid=..., subordinatenodename=null, eis_name=unknown eis name > (Subordinate XAResource at remote+http://localhost:8180) failed with exception $XAException.XA_RETRY: javax.transaction.xa.XAException: WFTXN0029: The peer threw an XA exception
 ----
 +
-The message means that the transaction manager was not able to commit the transaction.
-An error occurred during committing the transaction on the remote server.
-The `XAException.XA_RETRY` exception, meaning an intermittent failure, was reported to the log.
+This message means that the transaction manager was not able to commit the transaction as
+an error occurred while committing the transaction on the remote server.
+The `XAException.XA_RETRY` exception, meaning an intermittent failure, was reported in the logs.
 . The logs on `server2` or `server3` contain a warning about the `XAResource` failure as well.
 +
 [source,options="nowrap"]
@@ -508,23 +512,24 @@ The `XAException.XA_RETRY` exception, meaning an intermittent failure, was repor
 ARJUNA016036: commit on < formatId=131077, gtrid_length=35, bqual_length=43, tx_uid=..., node_name=server1, branch_uid=..., subordinatenodename=server2, eis_name=unknown eis name > (org.jboss.as.quickstarts.ejb.mock.MockXAResource@731ae22) failed with exception $XAException.XAER_RMFAIL: javax.transaction.xa.XAException
 ----
 +
-. Wait (or force) recovery to be processed at `server1`.
-. The number of commits on the targeted server instance has increased by one.
+. Wait for the recovery process at `server1` to recover the unfinished transaction (or force a recovery cycle manually)
+
+. The number of commits on the targeted server should be incremented by one.
 
 include::../shared-doc/undeploy-the-quickstart.adoc[leveloffset=+1]
 
-Repeat the same for the `server2` and `server3` by navigating
-to the quickstart sub-folder `${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server` and run:
+Repeat the last step for `server2` and `server3`:
 
 [source,sh,options="nowrap"]
 ----
-mvn wildfly:undeploy -Dwildfly.port=10090
-mvn wildfly:undeploy -Dwildfly.port=10190
+cd ${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server;
+mvn wildfly:undeploy -Dwildfly.port=10090;
+mvn wildfly:undeploy -Dwildfly.port=10190;
 ----
 
 === Server Log: Expected Warnings and Errors
 
-This quickstart is not production grade. The server log includes the following
+This quickstart is not production grade. The server logs include the following
 warnings during the startup. It is safe to ignore these warnings.
 
 [source,options="nowrap"]
