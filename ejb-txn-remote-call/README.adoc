@@ -138,7 +138,7 @@ First of all, a JDBC driver needs to be installed as https://docs.wildfly.org/30
 The following command (along packaging the `client` and the `server` applications) downloads the PostgreSQL driver automatically through Maven:
 [source,sh,subs="+quotes,attributes+"]
 ----
-cd ${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call
+cd ${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call;
 mvn clean package
 ----
 Then, the PostgreSQL driver needs to be loaded as jboss module in all {productName} servers:
@@ -173,19 +173,19 @@ For `server2` and `server3` the configuration file `standalone-ha.xml` will be u
 ----
 cd ${jbossHomeName}_1; \
 ./bin/jboss-cli.sh "embed-server --server-config=standalone.xml,\
- /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
+  /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
 ----
 [source,sh,subs="+quotes,attributes+"]
 ----
 cd ${jbossHomeName}_2; \
 ./bin/jboss-cli.sh "embed-server --server-config=standalone-ha.xml,\
- /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
+  /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
 ----
 [source,sh,subs="+quotes,attributes+"]
 ----
 cd ${jbossHomeName}_3; \
 ./bin/jboss-cli.sh "embed-server --server-config=standalone-ha.xml,\
- /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
+  /subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql.jdbc,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)"
 ----
 
 Finally, it is time to run the scripts for adding the PostgreSQL datasource to the {productName} servers:
@@ -524,7 +524,7 @@ Repeat the last step for `server2` and `server3`:
 ----
 cd ${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server;
 mvn wildfly:undeploy -Dwildfly.port=10090;
-mvn wildfly:undeploy -Dwildfly.port=10190;
+mvn wildfly:undeploy -Dwildfly.port=10190
 ----
 
 === Server Log: Expected Warnings and Errors
