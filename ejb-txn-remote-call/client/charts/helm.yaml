@@ -1,0 +1,9 @@
+build:
+  uri: https://github.com/jmfinelli/quickstart-wildfly.git
+  ref: WFLY-18470
+  contextDir: ejb-txn-remote-call/client
+  env:
+    - name: MAVEN_ARGS_APPEND
+      value: "-DremoteServerUsername='quickstartUser' -DremoteServerPassword='quickstartPwd1!' -DpostgresqlUsername='test' -DpostgresqlPassword='test'"
+deploy:
+  replicas: 1

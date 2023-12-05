@@ -996,6 +996,8 @@ You can do that by running `oc remove WildFlyServer client`
 and `oc remove WildFlyServer server`.
 With that the application will be stopped, and the pods will be removed.
 
+include::../shared-doc/build-and-run-the-quickstart-with-openshift.adoc[leveloffset=+1]
+
 == Conclusion
 
 This quickstarts is a showcase for the EJB remoting calls from one {productName} server
