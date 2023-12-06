@@ -1,0 +1,9 @@
+build:
+  uri: https://github.com/jmfinelli/quickstart-wildfly.git
+  ref: WFLY-18470
+  contextDir: ejb-txn-remote-call/server
+  env:
+    - name: MAVEN_ARGS_APPEND
+      value: "-DpostgresqlUsername='test' -DpostgresqlPassword='test'"
+deploy:
+  replicas: 1
