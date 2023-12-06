@@ -250,8 +250,6 @@
                                     <systemProperties>
                                         <postgresqlUsername>${postgresqlUsername}</postgresqlUsername>
                                         <postgresqlPassword>${postgresqlPassword}</postgresqlPassword>
-                                        <nodeIdentifier>${nodeIdentifier}</nodeIdentifier>
-                                        <nodeName>${nodeName}</nodeName>
                                     </systemProperties>
                                 </configuration>
                             </execution>
