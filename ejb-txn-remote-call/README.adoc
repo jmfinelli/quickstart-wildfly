@@ -668,254 +668,43 @@ endif::[]
 
 == Running on OpenShift
 
-=== OpenShift deployment
+The ephemeral nature of OpenShift does not work smoothly with {productName}'s ability to handle transactions.
+In fact, {productName}'s transaction management saves logs to keep record of transactions' history in case of
+extreme scenarios, like crashes or network issues. Moreover, EJB remoting requires a stable remote endpoint
+to guarantee:
 
-Before deploying this quickstart to OpenShift Container Platform we need to inspect
-a bit the platform. The {productName} server runs in a pod. The pod is an ephemeral object
-that could be rescheduled, restarted or moved to a different machine by the platform.
-The ephemeral nature of the pod is a poor match for the transaction manager handling transactions
-and for EJB remoting passing the context as well.
-The transaction manager requires a persistent log to be saved
-for each {productName} server instance.
-The EJB remoting requires a stable remote endpoint for connection to guarantee
-the state of stateful beans and the transaction affinity.
-The stability of the remote endpoint address is important for transaction
-recovery calls to eventually finish the transactions too.
-For these properties being guaranteed from the platform
-we use _StatefulSet_ object in OpenShift.
+* The transaction affinity of `stateful beans` and
+* The recovery of transactions.
 
-The recommended way to deploy applications to {productName} is using
-the {productName} Operator which utilizes the StatefulSet to manage {productName}
-as the default option in the background.
+To fulfil the aforementioned requirements, applications that requires ACID transactions _**must be**_ deployed
+to {productName} using the {productName}'s Operator, which can employ OpenShift's _StatefulSet_. Failing to do so
+might result in no-ACID transactions.
 
-NOTE: link:../shared-doc/cd-openshift-getting-started.adoc[Other quickstarts discuss deploying]
-      of the applications with _ReplicaSet_ defined by DeploymentConfig in a template.
-      It's a different approach that does not match well with the transaction affinity
-      and cannot be used here.
+=== Prerequisites
 
-=== Running on OpenShift: Prerequisites
+include::../shared-doc/cd-create-project.adoc[leveloffset=+3]
 
-include::../shared-doc/cd-create-project.adoc[leveloffset=+4]
+[#_install_operator]
+==== Install {productName}'s Operator
 
-[#_running_on_openshift_start_postgresql_database]
-==== Running on OpenShift: Start PostgreSQL database
-
-The quickstart requires the PostgreSQL database to be running.
-For testing purposes you can use the provided yaml template
-which deploys the database on your OpenShift instance
-(usable only for the testing purpose).
-
-[source,sh,options="nowrap",subs="+quotes,attributes+"]
-----
-# change path to ${PATH_TO_QUICKSTART_DIR}
-cd ${PATH_TO_QUICKSTART_DIR}
-# deploy not-production ready XA capable PostgreSQL database to OpenShift
-oc new-app --namespace=$(oc project -q) \
-           --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/postgresql.deployment.yaml
-----
-
-[#_running_on_openshift_build_the_application]
-==== Running on OpenShift: Build the application
-
-For building the application the {productName} s2i functionality
-(provided out-of-boxy by OpenShift) needs to be used.
-
-The {productName} provides `ImageStream` definition of builder images and runtime images.
-The builder image makes the application to be built, configure the application server
-with s2i scripts. The resulted image may be used for running,
-but it's big as it contains many dependencies needed only for the build.
-The chain build defines the next step which is to get the runtime image
-and copy there the configured {productName} server with the application.
+To install {productName}'s Operator, follow the https://github.com/wildfly/wildfly-operator[official documentation]
+(which instructions are also reported here for convenience)
 
 ifndef::ProductRelease,EAPCDRelease,EAPXPRelease[]
 [source,sh,options="nowrap",subs="+quotes,attributes+"]
 ----
-# Install builder image streams
-oc create -f {ImageandTemplateImportURL}imagestreams/wildfly-centos7.json
-# Install runtime image streams
-oc create -f {ImageandTemplateImportURL}imagestreams/wildfly-runtime-centos7.json
+cd /tmp
+git clone https://github.com/wildfly/wildfly-operator.git
 
-# Deploy template with chain build to get the quickstart
-# being deployed within runtime image
-oc create -f {ImageandTemplateImportURL}templates/wildfly-s2i-chained-build-template.yml
+cd wildfly-operator
+
+oc adm policy add-cluster-role-to-user cluster-admin developer
+make install
+make deploy
 ----
 endif::[]
 
-ifdef::ProductRelease,EAPCDRelease,EAPXPRelease[]
-[source,sh,options="nowrap",subs="+quotes,attributes+"]
-----
-# Install builder and runtime image streams
-oc create -f {ImageandTemplateImportURL}{ImagePrefixVersion}-openjdk11-image-stream.json
-
-# Deploy template with chain build to get the quickstart
-# being deployed within runtime image
-oc create -f {ImageandTemplateImportBaseURL}/master/eap-s2i-build.yaml
-----
-endif::[]
-
-The final step for starting the application start
-is the `s2i` chain build execution.
-
-ifndef::ProductRelease,EAPCDRelease,EAPXPRelease[]
-[source,sh,options="nowrap",subs="+quotes,attributes+"]
-----
-# s2i chain build for client application
-oc new-app --template=wildfly-s2i-chained-build-template \
-  -p IMAGE_STREAM_NAMESPACE=$(oc project -q) \
-  -p APPLICATION_NAME=client \
-  -p GIT_REPO={githubRepoUrl} \
-  -p GIT_BRANCH={productVersion}.0.0.Final \
-  -p GIT_CONTEXT_DIR=ejb-txn-remote-call/client
-# s2i chain build for server application
-oc new-app --template=wildfly-s2i-chained-build-template \
-  -p IMAGE_STREAM_NAMESPACE=$(oc project -q) \
-  -p APPLICATION_NAME=server \
-  -p GIT_REPO={githubRepoUrl} \
-  -p GIT_BRANCH={productVersion}.0.0.Final \
-  -p GIT_CONTEXT_DIR=ejb-txn-remote-call/server
-----
-endif::[]
-
-ifdef::ProductRelease,EAPCDRelease,EAPXPRelease[]
-[source,sh,options="nowrap",subs="+quotes,attributes+"]
-----
-# s2i chain build for client application
-oc new-app --template=eap-s2i-build \
-  -p EAP_IMAGESTREAM_NAMESPACE=$(oc project -q) \
-  -p APPLICATION_IMAGE=client \
-  -p SOURCE_REPOSITORY_URL={EAPQuickStartRepo} \
-  -p SOURCE_REPOSITORY_REF={EAPQuickStartRepoRef} \
-  -p CONTEXT_DIR=ejb-txn-remote-call/client \
-  -p EAP_IMAGE={BuildImageStream} \
-  -p EAP_RUNTIME_IMAGE={RuntimeImageStream}
-# s2i chain build for server application
-oc new-app --template=eap-s2i-build \
-  -p EAP_IMAGESTREAM_NAMESPACE=$(oc project -q) \
-  -p APPLICATION_IMAGE=server \
-  -p SOURCE_REPOSITORY_URL={EAPQuickStartRepo} \
-  -p SOURCE_REPOSITORY_REF={EAPQuickStartRepoRef} \
-  -p CONTEXT_DIR=ejb-txn-remote-call/server \
-  -p EAP_IMAGE={BuildImageStream} \
-  -p EAP_RUNTIME_IMAGE={RuntimeImageStream}
-----
-endif::[]
-
-Wait for the builds to finish. You can verify the build status by executing
-the `oc get pod` command.
-
-The expected output, after few whiles, shows that the `*-build` jobs
-have got the value `Completed` in the `STATUS` column.
-
-[source,sh,options="nowrap"]
-----
-oc get pod
-NAME                                READY   STATUS      RESTARTS   AGE
-client-2-build                      0/1     Completed   0          35m
-client-build-artifacts-1-build      0/1     Completed   0          45m
-server-2-build                      0/1     Completed   0          15m
-server-build-artifacts-1-build      0/1     Completed   0          19m
-----
-
-[#_running_on_openshift_install_productname_operator]
-==== Running on OpenShift: Install {productName} Operator
-
-With the prior step we have got the application image with the server being part of.
-The next step is to install the {productName} Operator which is responsible
-for managing the life cycle of the application image.
-
-ifndef::ProductRelease,EAPCDRelease,EAPXPRelease[]
-Manual installation of the {productName} Operator on OpenShift is summarized in the script
-https://github.com/wildfly/wildfly-operator/blob/master/build/run-openshift.sh[build/run-openshift.sh].
-
-[source,sh]
-----
-git clone https://github.com/wildfly/wildfly-operator/
-./wildfly-operator/build/run-openshift.sh
-----
-endif::[]
-
-ifdef::ProductRelease,EAPCDRelease,EAPXPRelease[]
-Consult necessary steps to install the {productName} Operator
-at {productName} documentation
-https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/
-
-The following steps can be used as a quickstart guide
-
-[source,sh,options="nowrap",subs="+quotes,attributes+"]
-----
-# 1. log in to account with cluster-admin permission
-# 2. create a YAML file containing Subscription object
-cat >> /tmp/eap-operator-sub.yaml << EOF
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: eap
-  namespace: openshift-operators
-spec:
-  channel: alpha
-  installPlanApproval: Automatic
-  name: eap
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace
-EOF
-# 3. create the Subscription object in the OpenShift
-oc apply -f eap-operator-sub.yaml
-# 4. verify the openshift-operators namespace that the object was created
-oc get csv -n openshift-operators
-----
-endif::[]
-
-[#_running_on_openshift_run_the_quickstart_with_productname_operator]
-==== Running on OpenShift: Run the Quickstart with {productName} Operator
-
-After you install the {productName} Operator, you can deploy the `CustomResource` that uses it.
-The `CustomResource.yaml` definition contains information the {productName} Operator uses
-to start the application pods for the client application and for the server application.
-
-Before deploying the application, ensure the `view` permissions for the default system account
-is set up. The `KUBE_PING` protocol, that is used for forming the HA {productName} cluster
-on OpenShift, requires `view` permissions to read labels of pods.
-
-[source,sh]
-----
-oc policy add-role-to-user view system:serviceaccount:$(oc project -q):default -n $(oc project -q)
-----
-
-After granting the permissions, deploy the `CustomResource`, managed by {productName} Operator
-that, referencing to the <<_running_on_openshift_build_the_application, built application images>>.
-
-[CAUTION]
-====
-Adjust the value of the `applicationImage` value in the OpenShift deployment templates
-`${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/client-cr.yaml` and
-`${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server/server-cr.yaml`
-to match the project. It is the most probably {artifactId}-project.
-====
-
-[source,sh,options="nowrap"]
-----
-cd ${PATH_TO_QUICKSTART_DIR}
-
-# deploying client definition, one replica, PostgreSQL database has to be available
-oc create -f ejb-txn-remote-call/client/client-cr.yaml
-# deploying server definition, two replicas, PostgreSQL database has to be available
-oc create -f ejb-txn-remote-call/server/server-cr.yaml
-----
-
-If these commands are successful, the `oc get pod` command shows
-all the pods required for the quickstart, namely the quickstart client and two
-server pods and the PostgreSQL database pod that the application connects to.
-
-[source,sh,options="nowrap"]
-----
-NAME                                READY   STATUS      RESTARTS   AGE
-client-0                            1/1     Running     0          29m
-postgresql-f9f475f87-l944r          1/1     Running     1          22h
-server-0                            1/1     Running     0          11m
-server-1                            1/1     Running     0          11m
-----
-
-To observe the {productName} Operator look at
+To verify that the {productName} Operator is running, execute the following command:
 
 ifndef::ProductRelease,EAPCDRelease,EAPXPRelease[]
 [source,sh,options="nowrap",subs="+quotes,attributes+"]
@@ -927,32 +716,88 @@ wildfly-operator-5d4b7cc868-zfxcv   1/1     Running     1          22h
 ----
 endif::[]
 
-ifdef::ProductRelease,EAPCDRelease,EAPXPRelease[]
+[#_start_postgresql_database]
+==== Start a PostgreSQL database
+
+This quickstart requires a PostgreSQL database to run correctly. In the scope of this quickstart,
+a PostgreSQL database will be deployed on the OpenShift instance using the Helm chart provided by
+https://github.com/bitnami/charts/tree/main/bitnami/postgresql[bitnami]:
+
 [source,sh,options="nowrap",subs="+quotes,attributes+"]
 ----
-oc get po -n openshift-operators
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install postgresql bitnami/postgresql -f charts/postgresql.yaml --wait --timeout="5m"
+----
 
-NAME                            READY   STATUS    RESTARTS   AGE
-eap-operator-75c77c789c-2zdnd   1/1     Running   0          86m
+[#_build_the_application]
+=== Build the applications
+
+To build the `client` and the `server` applications, this quickstart employs
+{productName}'s https://github.com/wildfly/wildfly-charts/tree/main[Helm charts].
+For more information about {productName}'s Helm chart, please refer to the official
+https://github.com/wildfly/wildfly-charts/blob/main/charts/wildfly/README.md[documentation].
+
+ifndef::ProductRelease,EAPCDRelease,EAPXPRelease[]
+[source,sh,options="nowrap",subs="+quotes,attributes+"]
+----
+helm repo add wildfly https://docs.wildfly.org/wildfly-charts/
+
+helm install client -f charts/client.yaml wildfly/wildfly --wait --timeout="5m"
+helm install server -f charts/server.yaml wildfly/wildfly --wait --timeout="5m"
 ----
 endif::[]
 
-[#_running_on_openshift_verify_the_quickstarts]
-==== Running on OpenShift: Verify the Quickstarts
+Wait for the builds to finish. Their status can be verified by executing the `oc get pod` command.
 
-The {productName} Operator creates routes that make the applications accessible
-outside the OpenShift environment. Run the `oc get route` command to find the location of the REST endpoint.
+[#_deploy_the_quickstart]
+=== Deploy the Quickstart
+
+To deploy the `client` and the `server` applications, this quickstart uses the `WildFlyServer` custom resource,
+thanks to which the {productName} Operator is able to create a {productName} pod and
+deploy an application.
+
+NOTE: Make sure that `view` permissions are granted to the default system account.
+The `KUBE_PING` protocol, which is used for forming the HA {productName} cluster
+on OpenShift, requires `view` permissions to read the labels of the pods:
+`oc policy add-role-to-user view system:serviceaccount:$(oc project -q):default -n $(oc project -q)`
+
+[source,sh,options="nowrap"]
+----
+cd ${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call;
+oc create -f client/client-cr.yaml;
+oc create -f server/server-cr.yaml
+----
+
+If these commands are successful, the `oc get pod` command shows
+all the pods required for the quickstart, i.e. the `client` pod and two
+`server` pods (and the PostgreSQL database).
+
+[source,sh,options="nowrap"]
+----
+NAME                                READY   STATUS      RESTARTS   AGE
+client-0                            1/1     Running     0          29m
+postgresql-f9f475f87-l944r          1/1     Running     1          22h
+server-0                            1/1     Running     0          11m
+server-1                            1/1     Running     0          11m
+----
+
+[#_verify_the_quickstarts]
+==== Verify the Quickstarts
+
+The {productName} Operator creates routes that make the `client` and the `server` applications accessible
+outside the OpenShift environment. The `oc get route` command shows the addresses of the HTTP endpoints.
 An example of the output is:
 
 [source,sh,options="nowrap"]
 ----
+oc get route
+
 NAME           HOST/PORT                                                            PATH   SERVICES              PORT
 client-route   client-route-ejb-txn-remote-call-client-artifacts.apps-crc.testing          client-loadbalancer   http
 server-route   server-route-ejb-txn-remote-call-client-artifacts.apps-crc.testing          server-loadbalancer   http
 ----
 
-For HTTP endpoints provided by the quickstart application
-check <<rest-endpoints,the table above>>.
+For other HTTP endpoints, refer to <<rest-endpoints,the table above>>.
 
 [source,sh,options="nowrap"]
 ----
@@ -963,7 +808,7 @@ curl -s $(oc get route client-route --template='{{ .spec.host }}')/client/direct
 curl -s $(oc get route client-route --template='{{ .spec.host }}')/client/remote-outbound-notx-stateful | jq .
 ----
 
-If you like to <<_steps_to_observe_recovery_processing,observe the recovery processing>>
+If you like to <<_steps_to_observe_recovery_processing,observe the recovery process>>
 then you can follow these shell commands.
 
 [source,sh,options="nowrap"]
@@ -988,15 +833,16 @@ while true; do
 done
 ----
 
+// TODO: Read the following document to see what can be integrated
+//include::../shared-doc/build-and-run-the-quickstart-with-openshift.adoc[leveloffset=+1]
+
 ==== Running on OpenShift: Quickstart application removal
 
-To remove the application you need to remove the `WildFlyServer` definition
+To remove the application you need to remove the `WildFlyServer` definitions
 (which was deployed by <<_running_on_openshift_run_the_quickstart_with_productname_operator,`*-cr` yaml descriptor>>).
 You can do that by running `oc remove WildFlyServer client`
 and `oc remove WildFlyServer server`.
 With that the application will be stopped, and the pods will be removed.
-
-include::../shared-doc/build-and-run-the-quickstart-with-openshift.adoc[leveloffset=+1]
 
 == Conclusion
 

@@ -1,4 +1,3 @@
-# WildFly helm chart
 build:
   uri: https://github.com/jmfinelli/quickstart-wildfly.git
   ref: WFLY-18470
@@ -6,12 +5,5 @@ build:
   env:
     - name: MAVEN_ARGS_APPEND
       value: "-DremoteServerUsername='quickstartUser' -DremoteServerPassword='quickstartPwd1!' -DpostgresqlUsername='test' -DpostgresqlPassword='test'"
-
-# K8s
-apiVersion: wildfly.org/v1alpha1
-kind: WildFlyServer
-metadata:
-  name: clientApplication
-spec:
-  applicationImage: "client-build-artifacts:latest"
-  replicas: 1
+deploy:
+  enabled: false

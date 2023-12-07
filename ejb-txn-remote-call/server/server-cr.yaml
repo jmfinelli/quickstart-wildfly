@@ -3,7 +3,7 @@ kind: WildFlyServer
 metadata:
   name: server
 spec:
-  applicationImage: "image-registry.openshift-image-registry.svc:5000/ejb-txn-remote-call-project/server:latest"
+  applicationImage: "server:latest"
   replicas: 2
   env:
     - name: DB_SERVICE_PREFIX_MAPPING
@@ -19,15 +19,9 @@ spec:
     - name: TEST_DRIVER
       value: postgresql
     - name: TEST_DATABASE
-      valueFrom:
-        secretKeyRef:
-          name: postgresql
-          key: database-name
+      value: test
     - name: TEST_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: postgresql
-          key: username
+      value: test
     - name: TEST_PASSWORD
       valueFrom:
         secretKeyRef:
