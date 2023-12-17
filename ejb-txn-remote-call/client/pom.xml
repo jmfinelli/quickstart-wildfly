@@ -43,6 +43,7 @@
         <version.plugin.wildfly>4.2.0.Final</version.plugin.wildfly>
         <version.postgresql>42.7.0</version.postgresql>
         <version.wildfly-datasources-galleon-pack>6.0.0.Final</version.wildfly-datasources-galleon-pack>
+        <version.wildfly-cloud-galleon-pack>5.0.2.Final</version.wildfly-cloud-galleon-pack>
     </properties>
 
     <repositories>
@@ -292,16 +293,22 @@
                                             <artifactId>wildfly-datasources-galleon-pack</artifactId>
                                             <version>${version.wildfly-datasources-galleon-pack}</version>
                                         </feature-pack>
+                                        <feature-pack>
+                                            <groupId>org.wildfly.cloud</groupId>
+                                            <artifactId>wildfly-cloud-galleon-pack</artifactId>
+                                            <version>${version.wildfly-cloud-galleon-pack}</version>
+                                        </feature-pack>
                                     </feature-packs>
                                     <layers>
                                         <layer>cloud-server</layer>
+                                        <layer>jaxrs</layer>
                                         <layer>ejb</layer>
                                         <layer>jpa</layer>
                                         <layer>core-tools</layer>
                                         <!-- postgresql driver -->
                                         <layer>postgresql-driver</layer>
                                     </layers>
-                                    <serverConfig>standalone-openshift.xml</serverConfig>
+                                    <serverConfig>standalone.xml</serverConfig>s
                                 </configuration>
                             </execution>
                             <execution>
