@@ -194,28 +194,28 @@ Finally, it is time to run the scripts for adding the PostgreSQL datasource to t
 ----
 cd ${jbossHomeName}_1; \
 ./bin/jboss-cli.sh -DpostgresqlUsername="test" -DpostgresqlPassword="test" \
-  --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/postgresql-datasource.cli \
-  --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/cli.local.properties
+  --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/scripts/postgresql-datasource.cli \
+  --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/scripts/cli.local.properties
 ----
 [source,sh,subs="+quotes,attributes+"]
 ----
 cd ${jbossHomeName}_2; \
 ./bin/jboss-cli.sh -DpostgresqlUsername="test" -DpostgresqlPassword="test" \
-  --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server/extensions/postgresql-datasource.cli \
-  --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server/extensions/cli.local.properties
+  --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server/scripts/postgresql-datasource.cli \
+  --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server/scripts/cli.local.properties
 ----
 [source,sh,subs="+quotes,attributes+"]
 ----
 cd ${jbossHomeName}_3; \
 ./bin/jboss-cli.sh -DpostgresqlUsername="test" -DpostgresqlPassword="test" \
-  --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server/extensions/postgresql-datasource.cli \
-  --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server/extensions/cli.local.properties
+  --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server/scripts/postgresql-datasource.cli \
+  --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/server/scripts/cli.local.properties
 ----
 
 === Configuring EJB remoting on `server1`
 
 EJB remote calls from `server1` to either `server2` or `server3` need to be authenticated. To achieve
-this configuration, the script `${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/remoting-configuration.cli`
+this configuration, the script `${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/scripts/remoting-configuration.cli`
 will be executed on `server1`.
 
 [NOTE]
@@ -228,8 +228,8 @@ will be executed on `server1`.
 ----
 cd ${jbossHomeName}_1; \
 ./bin/jboss-cli.sh -DremoteServerUsername="quickstartUser" -DremoteServerPassword="quickstartPwd1!" \
-  --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/remoting-configuration.cli \
-  --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/extensions/cli.local.properties
+  --file=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/scripts/remoting-configuration.cli \
+  --properties=${PATH_TO_QUICKSTART_DIR}/ejb-txn-remote-call/client/scripts/cli.local.properties
 ----
 
 NOTE: For Windows, use the `bin\jboss-cli.bat` script.

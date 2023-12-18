@@ -252,11 +252,11 @@
                                     <offline>true</offline>
                                     <jbossHome>target/server</jbossHome>
                                     <scripts>
-                                        <script>extensions/remoting-configuration.cli</script>
-                                        <script>extensions/postgresql-datasource.cli</script>
+                                        <script>scripts/remoting-configuration.cli</script>
+                                        <script>scripts/postgresql-datasource.cli</script>
                                     </scripts>
                                     <propertiesFiles>
-                                        <propertyFile>extensions/cli.local.properties</propertyFile>
+                                        <propertyFile>scripts/cli.local.properties</propertyFile>
                                     </propertiesFiles>
                                     <systemProperties>
                                         <remoteServerUsername>${remoteServerUsername}</remoteServerUsername>
@@ -322,11 +322,11 @@
                                     <offline>true</offline>
                                     <jbossHome>target/server</jbossHome>
                                     <scripts>
-                                        <script>extensions/remoting-configuration.cli</script>
-                                        <script>extensions/postgresql-datasource.cli</script>
+                                        <script>scripts/remoting-configuration.cli</script>
+                                        <script>scripts/postgresql-datasource.cli</script>
                                     </scripts>
                                     <propertiesFiles>
-                                        <propertyFile>extensions/cli.openshift.properties</propertyFile>
+                                        <propertyFile>scripts/cli.openshift.properties</propertyFile>
                                     </propertiesFiles>
                                     <systemProperties>
                                         <remoteServerUsername>${remoteServerUsername}</remoteServerUsername>
