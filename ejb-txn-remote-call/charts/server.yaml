@@ -4,6 +4,6 @@ build:
   contextDir: ejb-txn-remote-call/server
   env:
     - name: MAVEN_ARGS_APPEND
-      value: "-DpostgresqlUsername='test' -DpostgresqlPassword='test'"
+      value: "-DpostgresqlUsername=test -DpostgresqlPassword=test"
 deploy:
   enabled: false
