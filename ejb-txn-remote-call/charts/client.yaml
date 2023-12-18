@@ -4,6 +4,6 @@ build:
   contextDir: ejb-txn-remote-call/client
   env:
     - name: MAVEN_ARGS_APPEND
-      value: "-DremoteServerUsername='quickstartUser' -DremoteServerPassword='quickstartPwd1!' -DpostgresqlUsername='test' -DpostgresqlPassword='test'"
+      value: "-DremoteServerUsername=quickstartUser -DremoteServerPassword=quickstartPwd1! -DpostgresqlUsername=test -DpostgresqlPassword=test"
 deploy:
   enabled: false

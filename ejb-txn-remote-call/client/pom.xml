@@ -196,6 +196,7 @@
             <plugin>
                 <artifactId>maven-war-plugin</artifactId>
                 <configuration>
+                    <warName>client</warName>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
             </plugin>
@@ -276,6 +277,10 @@
                     <plugin>
                         <groupId>org.wildfly.plugins</groupId>
                         <artifactId>wildfly-maven-plugin</artifactId>
+                        <configuration>
+                            <filename>client.war</filename>
+                            <serverConfig>standalone.xml</serverConfig>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>package</id>
@@ -308,7 +313,6 @@
                                         <!-- postgresql driver -->
                                         <layer>postgresql-driver</layer>
                                     </layers>
-                                    <serverConfig>standalone.xml</serverConfig>s
                                 </configuration>
                             </execution>
                             <execution>
