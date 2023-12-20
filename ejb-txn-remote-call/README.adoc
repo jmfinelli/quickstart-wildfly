@@ -742,8 +742,8 @@ ifndef::ProductRelease,EAPCDRelease,EAPXPRelease[]
 ----
 helm repo add wildfly https://docs.wildfly.org/wildfly-charts/
 
-helm install client -f charts/client.yaml wildfly/wildfly --wait --timeout="5m"
-helm install server -f charts/server.yaml wildfly/wildfly --wait --timeout="5m"
+helm install client -f charts/client.yaml wildfly/wildfly
+helm install server -f charts/server.yaml wildfly/wildfly
 ----
 endif::[]
 
@@ -768,7 +768,7 @@ oc create -f client/client-cr.yaml;
 oc create -f server/server-cr.yaml
 ----
 
-If these commands are successful, the `oc get pod` command shows
+If the above commands are successful, the `oc get pod` command shows
 all the pods required for the quickstart, i.e. the `client` pod and two
 `server` pods (and the PostgreSQL database).
 
@@ -797,7 +797,7 @@ client-route   client-route-ejb-txn-remote-call-client-artifacts.apps-crc.testin
 server-route   server-route-ejb-txn-remote-call-client-artifacts.apps-crc.testing          server-loadbalancer   http
 ----
 
-For other HTTP endpoints, refer to <<rest-endpoints,the table above>>.
+With the following commands, it is possible to verify the some functionalities of this quickstart:
 
 [source,sh,options="nowrap"]
 ----
@@ -807,6 +807,8 @@ curl -s $(oc get route client-route --template='{{ .spec.host }}')/client/remote
 curl -s $(oc get route client-route --template='{{ .spec.host }}')/client/direct-stateless | jq .
 curl -s $(oc get route client-route --template='{{ .spec.host }}')/client/remote-outbound-notx-stateful | jq .
 ----
+
+For other HTTP endpoints, refer to <<rest-endpoints,the table above>>.
 
 If you like to <<_steps_to_observe_recovery_processing,observe the recovery process>>
 then you can follow these shell commands.
@@ -838,16 +840,33 @@ done
 
 ==== Running on OpenShift: Quickstart application removal
 
-To remove the application you need to remove the `WildFlyServer` definitions
-(which was deployed by <<_running_on_openshift_run_the_quickstart_with_productname_operator,`*-cr` yaml descriptor>>).
-You can do that by running `oc remove WildFlyServer client`
-and `oc remove WildFlyServer server`.
-With that the application will be stopped, and the pods will be removed.
+To delete the `client` and the `server` applications, the `WildFlyServer` definitions needs to be deleted.
+This is achievable running:
 
-== Conclusion
+[source,sh,options="nowrap"]
+----
+oc delete WildFlyServer client;
+oc delete WildFlyServer server
+----
 
-This quickstarts is a showcase for the EJB remoting calls from one {productName} server
-to other with transaction propagation being involved.
-It shows things from multiple areas from setting-up the datasources, through security definition
-for remote connection, EJB remoting in the application, up to observing the transaction recovery processing.
-On top of that it shows running this all in OpenShift managed with {productName} Operator.
+The `client` and the `server` applications will be stopped, and the two pods will be removed.
+
+To remove the Helm charts installed previously:
+
+[source,sh,options="nowrap"]
+----
+helm uninstall client;
+helm uninstall server;
+helm uninstall postgresql
+----
+
+Finally, to undeploy and uninstall the {productName}'s operator:
+
+[source,sh,options="nowrap"]
+----
+cd /tmp/wildfly-operator;
+make undeploy;
+make uninstall
+----
+
+The above commands completely clean the OpenShift namespace
