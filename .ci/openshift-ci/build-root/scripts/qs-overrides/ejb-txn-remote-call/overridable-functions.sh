@@ -79,6 +79,10 @@ function helmInstall() {
 
 # Commands to run once the Helm install has completed
 function runPostHelmInstallCommands() {
+
+    # Make sure that view permissions are granted to the default system account.
+    oc policy add-role-to-user view system:serviceaccount:$(oc project -q):default -n $(oc project -q)
+
     oc create -f ejb-txn-remote-call/client/client-cr.yaml
     # TODO: should we check when the deployment is completed?
     oc create -f ejb-txn-remote-call/server/server-cr.yaml
@@ -103,17 +107,4 @@ function cleanPrerequisites()
   # Uninstall PostgreSQL and remove bitnami
   helm uninstall postgresql
   helm repo remove bitnami
-}
-
-function deployClient()
-{
-  oc apply -f - << EOF
-  apiVersion: wildfly.org/v1alpha1
-  kind: WildFlyServer
-  metadata:
-    name: client-wildfly-server
-  spec:
-    applicationImage: "client:latest"
-    replicas: 1
-EOF
 }
