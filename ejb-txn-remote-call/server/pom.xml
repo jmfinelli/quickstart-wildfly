@@ -238,31 +238,6 @@
             <id>openshift</id>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>org.wildfly.plugins</groupId>
-                        <artifactId>wildfly-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>package</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>package</goal>
-                                </goals>
-                                <configuration>
-                                    <discover-provisioning-info>
-                                        <version>${version.server}</version>
-                                        <add-ons>
-                                            <add-on>postgresql</add-on>
-                                        </add-ons>
-                                        <context>cloud</context>
-                                        <!-- Some JNDI lookup to ignore -->
-                                        <failsOnError>false</failsOnError>
-                                        <profile>ha</profile>
-                                    </discover-provisioning-info>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <!-- do not attach sources to openshift deployments -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>

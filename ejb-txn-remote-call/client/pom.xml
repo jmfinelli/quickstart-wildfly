@@ -273,51 +273,6 @@
             <id>openshift</id>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>org.wildfly.plugins</groupId>
-                        <artifactId>wildfly-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>package</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>package</goal>
-                                </goals>
-                                <configuration>
-                                    <discover-provisioning-info>
-                                        <version>${version.server}</version>
-                                        <!-- Some JNDI lookup to ignore -->
-                                        <failsOnError>false</failsOnError>
-                                        <context>cloud</context>
-                                        <add-ons>
-                                            <add-on>postgresql</add-on>
-                                        </add-ons>
-                                    </discover-provisioning-info>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>run-script</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>execute-commands</goal>
-                                </goals>
-                                <configuration>
-                                    <offline>true</offline>
-                                    <jbossHome>${project.build.directory}/server</jbossHome>
-                                    <scripts>
-                                        <script>scripts/remoting-configuration.cli</script>
-                                    </scripts>
-                                    <propertiesFiles>
-                                        <propertyFile>scripts/cli.openshift.properties</propertyFile>
-                                    </propertiesFiles>
-                                    <systemProperties>
-                                        <remoteServerUsername>${remoteServerUsername}</remoteServerUsername>
-                                        <remoteServerPassword>${remoteServerPassword}</remoteServerPassword>
-                                    </systemProperties>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <!-- do not attach sources to openshift deployments -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>

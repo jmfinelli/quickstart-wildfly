@@ -24,8 +24,10 @@ function applicationName() {
 #
 # Parameters
 # 1 - application name
-function installPrerequisites()
-{
+function installPrerequisites() {
+
+  echo "installPrerequisites() function"
+
   application="${1}"
 
   CURRENT_FOLDER=$(pwd)
@@ -68,32 +70,43 @@ function installPrerequisites()
   cd $CURRENT_FOLDER || return
 }
 
-function helmInstall() {
-    helm_set_arguments="$2"
+function helmInstall()
+{
 
-    # TODO https://issues.redhat.com/browse/WFLY-18574 remove this when persistence is working
-    # This seems to work with my postgresql.yaml :fingers_crossed
-    # helm_set_arguments="${helm_set_arguments} --set postgresql.primary.persistence.enabled=false"
+  echo "helmInstall() function"
 
-    # Don't quote ${helm_set_arguments} as it breaks the command when empty, and seems to work without
-    helm install client -f charts/client.yaml wildfly/wildfly --wait --timeout="${helm_install_timeout}" ${helm_set_arguments}
-    echo "$?"
-    # TODO: should we check when the build is done?
-    helm install server -f charts/server.yaml wildfly/wildfly --wait --timeout="${helm_install_timeout}" ${helm_set_arguments}
-    echo "$?"
-    # TODO: should we check when the build is done?
+  helm_set_arguments="$2"
+
+  # TODO https://issues.redhat.com/browse/WFLY-18574 remove this when persistence is working
+  # This seems to work with my postgresql.yaml :fingers_crossed
+  # helm_set_arguments="${helm_set_arguments} --set postgresql.primary.persistence.enabled=false"
+
+  # Don't quote ${helm_set_arguments} as it breaks the command when empty, and seems to work without
+  helm install client -f charts/client.yaml wildfly/wildfly --wait --timeout="${helm_install_timeout}" ${helm_set_arguments}
+  echo "$?"
+  # TODO: should we check when the build is done?
+  helm install server -f charts/server.yaml wildfly/wildfly --wait --timeout="${helm_install_timeout}" ${helm_set_arguments}
+  echo "$?"
+  # TODO: should we check when the build is done?
+  # ToRemove
+  echo "Sleeping for 600 seconds"
+  sleep 600
 }
 
 # Commands to run once the Helm install has completed
 function runPostHelmInstallCommands() {
 
-    # Make sure that view permissions are granted to the default system account.
-    # kubectl policy add-role-to-user view system:serviceaccount:$(oc project -q):default -n $(oc project -q)
+  echo "runPostHelmInstallCommands() function"
 
-    kubectl create -f client/client-cr.yaml
-    # TODO: should we check when the deployment is completed?
-    kubectl create -f server/server-cr.yaml
-    # TODO: should we check when the deployment is completed?
+  # Make sure that view permissions are granted to the default system account.
+  # kubectl policy add-role-to-user view system:serviceaccount:$(oc project -q):default -n $(oc project -q)
+
+  kubectl create -f client/client-cr.yaml
+  # TODO: should we check when the deployment is completed?
+  kubectl create -f server/server-cr.yaml
+  # TODO: should we check when the deployment is completed?
+  echo "sleeping for 4 minutes"
+  sleep 240
 }
 
 # Cleans any prerequisites after doing the Helm uninstall.
@@ -101,8 +114,10 @@ function runPostHelmInstallCommands() {
 #
 # Parameters
 # 1 - application name
-function cleanPrerequisites()
-{
+function cleanPrerequisites() {
+
+  echo "cleanPrerequisites() function"
+
   cd /tmp/wildfly-operator || return
 
   make undeploy
