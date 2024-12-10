@@ -12,5 +12,5 @@ spec:
       value: test
     - name: POSTGRESQL_USER
       value: test
-  applicationImage: "server:latest"
+  applicationImage: "localhost:5000/ejb-txn-remote-call-server:latest"
   replicas: 2

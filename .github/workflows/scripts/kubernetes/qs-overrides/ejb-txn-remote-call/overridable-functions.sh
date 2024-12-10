@@ -68,32 +68,70 @@ function installPrerequisites()
   cd $CURRENT_FOLDER || return
 }
 
+function provisionServer() {
+  application="${1}"
+  qs_dir="${2}"
+  image="${3}"
+
+  echo "Packaging the 'client' provisioned server..."
+  cd client || return 1
+  mvn -B -fae clean package -Popenshift -P '!provisioned-server' wildfly:image -DskipTests -DpostgresqlUsername="test" -DpostgresqlPassword="test"
+
+  export client_image_name="${application}-client"
+  export client_image_location="localhost:5000/${client_image_name}"
+  export image="${client_image_location}:latest"
+
+  echo "Building and tagging 'server' image..."
+  docker build --load -t ${image} ./target
+  echo "...and pushing to registry."
+  docker push ${image}
+
+  cd ../server || return 1
+  echo "Packaging the 'server' provisioned server..."
+  mvn -B -fae clean package -Popenshift -P '!provisioned-server' wildfly:image -DskipTests -DpostgresqlUsername="test" -DpostgresqlPassword="test"
+
+  export server_image_name="${application}-server"
+  export server_image_location="localhost:5000/${server_image_name}"
+  export image="${server_image_location}:latest"
+
+  echo "Building and tagging 'server' image..."
+  docker build --load -t ${image} ./target
+  echo "...and pushing to registry."
+  docker push ${image}
+
+  # Let's go back to the root of the quickstart
+  cd ..
+}
+
 function helmInstall() {
-    helm_set_arguments="$2"
+  echo "helmInstall() nothing to do"
+  #helm_set_arguments="$2"
 
-    # TODO https://issues.redhat.com/browse/WFLY-18574 remove this when persistence is working
-    # This seems to work with my postgresql.yaml :fingers_crossed
-    # helm_set_arguments="${helm_set_arguments} --set postgresql.primary.persistence.enabled=false"
+  # TODO https://issues.redhat.com/browse/WFLY-18574 remove this when persistence is working
+  # This seems to work with my postgresql.yaml :fingers_crossed
+  # helm_set_arguments="${helm_set_arguments} --set postgresql.primary.persistence.enabled=false"
 
-    # Don't quote ${helm_set_arguments} as it breaks the command when empty, and seems to work without
-    helm install client -f charts/client.yaml wildfly/wildfly --wait --timeout="${helm_install_timeout}" ${helm_set_arguments}
-    echo "$?"
-    # TODO: should we check when the build is done?
-    helm install server -f charts/server.yaml wildfly/wildfly --wait --timeout="${helm_install_timeout}" ${helm_set_arguments}
-    echo "$?"
-    # TODO: should we check when the build is done?
+  # Don't quote ${helm_set_arguments} as it breaks the command when empty, and seems to work without
+  #helm install client -f charts/client.yaml wildfly/wildfly --wait --timeout="${helm_install_timeout}" ${helm_set_arguments}
+  #echo "$?"
+  # TODO: should we check when the build is done?
+  #helm install server -f charts/server.yaml wildfly/wildfly --wait --timeout="${helm_install_timeout}" ${helm_set_arguments}
+  #echo "$?"
+  # TODO: should we check when the build is done?
 }
 
 # Commands to run once the Helm install has completed
 function runPostHelmInstallCommands() {
 
-    # Make sure that view permissions are granted to the default system account.
-    # kubectl policy add-role-to-user view system:serviceaccount:$(oc project -q):default -n $(oc project -q)
+  # Make sure that view permissions are granted to the default system account.
+  # kubectl policy add-role-to-user view system:serviceaccount:$(oc project -q):default -n $(oc project -q)
 
-    kubectl create -f client/client-cr.yaml
-    # TODO: should we check when the deployment is completed?
-    kubectl create -f server/server-cr.yaml
-    # TODO: should we check when the deployment is completed?
+  kubectl create -f client/client-cr.yaml
+  sleep 30
+  # TODO: should we check when the deployment is completed?
+  kubectl create -f server/server-cr.yaml
+  sleep 30
+  # TODO: should we check when the deployment is completed?
 }
 
 # Cleans any prerequisites after doing the Helm uninstall.

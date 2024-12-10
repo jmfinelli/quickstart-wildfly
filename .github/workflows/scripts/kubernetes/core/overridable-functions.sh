@@ -49,6 +49,29 @@ function cleanPrerequisites()
   echo "No prerequisites to clean for ${application}"
 }
 
+# Provision server and push imagestream
+# The current directory is the quickstart directory
+#
+# Parameters
+# 1 - application name
+# 2 - quickstart dir
+# 3 - image
+function provisionServer()
+{
+  application="${1}"
+  qs_dir="${2}"
+  image="${3}"
+
+  echo "Building application and provisioning server image..."
+  mvn -B package -Popenshift wildfly:image -DskipTests
+
+  echo "Tagging image and pushing to registry..."
+  export root_image_name="localhost:5000/${application}"
+  export image="${root_image_name}:latest"
+  docker tag ${qs_dir} ${image}
+  docker push ${image}
+}
+
 # Performs the 'helm install' command.
 # The current directory is the quickstart directory
 # Parameters

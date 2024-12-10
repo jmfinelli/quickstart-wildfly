@@ -76,20 +76,14 @@ fi
 
 ################################################################################################
 # Install any pre-requisites. Function is from overridable-functions.sh
+
 echo "Checking if we need to install pre-requisites"
 installPrerequisites "${application}"
 
 ################################################################################################
 # Provision server and push imagestream
 
-echo "Building application and provisioning server image..."
-mvn -B package -Popenshift wildfly:image -DskipTests
-
-echo "Tagging image and pushing to registry..."
-export root_image_name="localhost:5000/${application}"
-export image="${root_image_name}:latest"
-docker tag ${qs_dir} ${image}
-docker push ${image}
+provisionServer "${application}" "${qs_dir}" "${image}"
 
 ################################################################################################
 # Helm install, waiting for the pods to come up

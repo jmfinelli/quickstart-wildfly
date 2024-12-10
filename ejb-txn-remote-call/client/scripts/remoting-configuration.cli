@@ -6,9 +6,6 @@ set remoteServerUsername=${remoteServerUsername}
 set remoteServerPassword=${remoteServerPassword}
 set serverConfig=${serverConfig}
 
-# running embeded server with server config
-embed-server --server-config=$serverConfig
-
 /system-property=remote.server.host:add(value=$remoteServerHost)
 /system-property=remote.server.port:add(value=$remoteServerPort)
 /system-property=remote.server.username:add(value=$remoteServerUsername)

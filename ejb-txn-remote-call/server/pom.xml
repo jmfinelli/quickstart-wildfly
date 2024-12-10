@@ -40,6 +40,8 @@
         <version.server>34.0.0.Final</version.server>
         <!-- the versions for BOMs, Packs and Plugins -->
         <version.bom.ee>${version.server}</version.bom.ee>
+        <version.pack.cloud>7.0.2.Final</version.pack.cloud>
+        <version.pack.datasources>8.0.0.Final</version.pack.datasources>
         <version.plugin.wildfly>5.1.0.Alpha1</version.plugin.wildfly>
         <!-- the versions for other Dependencies and Plugins -->
         <version.narayana>7.0.0.Final</version.narayana>
@@ -241,25 +243,42 @@
                     <plugin>
                         <groupId>org.wildfly.plugins</groupId>
                         <artifactId>wildfly-maven-plugin</artifactId>
+                        <configuration>
+                            <!-- Env used when calling wildfly:start goal -->
+                            <env>
+                                <POSTGRESQL_DATABASE>test</POSTGRESQL_DATABASE>
+                                <POSTGRESQL_JNDI>java:jboss/datasources/ejbJtaDs</POSTGRESQL_JNDI>
+                                <POSTGRESQL_PASSWORD>${postgresqlUsername}</POSTGRESQL_PASSWORD>
+                                <POSTGRESQL_USER>${postgresqlPassword}</POSTGRESQL_USER>
+                            </env>
+                            <feature-packs>
+                                <feature-pack>
+                                    <location>org.wildfly:wildfly-galleon-pack:${version.server}</location>
+                                </feature-pack>
+                                <feature-pack>
+                                    <location>org.wildfly.cloud:wildfly-cloud-galleon-pack:${version.pack.cloud}</location>
+                                </feature-pack>
+                                <feature-pack>
+                                    <location>org.wildfly:wildfly-datasources-galleon-pack:${version.pack.datasources}</location>
+                                </feature-pack>
+                            </feature-packs>
+                            <discover-provisioning-info>
+                                <version>${version.server}</version>
+                                <add-ons>
+                                    <add-on>postgresql</add-on>
+                                </add-ons>
+                                <context>cloud</context>
+                                <!-- Some JNDI lookup to ignore -->
+                                <failsOnError>false</failsOnError>
+                                <profile>ha</profile>
+                            </discover-provisioning-info>
+                            <build>false</build>
+                        </configuration>
                         <executions>
                             <execution>
-                                <id>package</id>
-                                <phase>package</phase>
                                 <goals>
-                                    <goal>package</goal>
+                                    <goal>image</goal>
                                 </goals>
-                                <configuration>
-                                    <discover-provisioning-info>
-                                        <version>${version.server}</version>
-                                        <add-ons>
-                                            <add-on>postgresql</add-on>
-                                        </add-ons>
-                                        <context>cloud</context>
-                                        <!-- Some JNDI lookup to ignore -->
-                                        <failsOnError>false</failsOnError>
-                                        <profile>ha</profile>
-                                    </discover-provisioning-info>
-                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
