@@ -129,6 +129,16 @@ function helmInstallFailed() {
     echo ""
 }
 
+# Port forward to test the quickstart
+# Parameters
+# 1 - application name
+#
+function portForward() {
+  kubectl port-forward service/${application} 8080:8080 &
+  kubectl_fwd_pid=$!
+  echo "Process ID of kubect port-forward: ${kubectl_fwd_pid}"
+}
+
 # More output when the tests have failed
 # Parameters
 # 1 - application name

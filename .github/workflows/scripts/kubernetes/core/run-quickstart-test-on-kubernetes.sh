@@ -110,9 +110,7 @@ if [ "${helm_install_ret}" != "0" ]; then
   helmInstallFailed
 fi
 
-kubectl port-forward service/${application} 8080:8080 &
-kubectl_fwd_pid=$!
-echo "Process ID of kubect port-forward: ${kubectl_fwd_pid}"
+portForward "${application}"
 
 ################################################################################################
 # Run any post install

@@ -1,7 +1,7 @@
 apiVersion: wildfly.org/v1alpha1
 kind: WildFlyServer
 metadata:
-  name: client
+  name: ejb-txn-remote-call-client
 spec:
   env:
     - name: POSTGRESQL_DATABASE

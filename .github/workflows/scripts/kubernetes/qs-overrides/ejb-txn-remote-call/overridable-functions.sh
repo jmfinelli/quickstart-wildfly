@@ -70,8 +70,6 @@ function installPrerequisites()
 
 function provisionServer() {
   application="${1}"
-  qs_dir="${2}"
-  image="${3}"
 
   echo "Packaging the 'client' provisioned server..."
   cd client || return 1
@@ -134,6 +132,20 @@ function runPostHelmInstallCommands() {
   # TODO: should we check when the deployment is completed?
 }
 
+# Port forward to test the quickstart
+# Parameters
+# 1 - application name
+#
+function portForward() {
+  kubectl port-forward service/${application}-client-headless 8080:8080 &
+  kubectl_fwd_pid=$!
+  echo "Process ID of kubect port-forward for the Client: ${kubectl_fwd_pid}"
+
+  kubectl port-forward service/${application}-server-headless 8180:8080 &
+  kubectl_fwd_pid=$!
+  echo "Process ID of kubect port-forward for the Server: ${kubectl_fwd_pid}"
+}
+
 # Cleans any prerequisites after doing the Helm uninstall.
 # The current directory is the quickstart directory
 #
@@ -141,16 +153,19 @@ function runPostHelmInstallCommands() {
 # 1 - application name
 function cleanPrerequisites()
 {
-  cd /tmp/wildfly-operator || return
+  # TODO cleanPrerequisites should be restored...
+  echo "TODO cleanPrerequisites should be restored...and this message deleted"
 
-  make undeploy
+#  cd /tmp/wildfly-operator || return
+
+#  make undeploy
   # Undeploy already removes the CRDs
   # make uninstall
 
-  cd ..
-  rm -rf wildfly-operator
+#  cd ..
+#  rm -rf wildfly-operator
 
   # Uninstall PostgreSQL and remove bitnami
-  helm uninstall postgresql
-  helm repo remove bitnami
+#  helm uninstall postgresql
+#  helm repo remove bitnami
 }
